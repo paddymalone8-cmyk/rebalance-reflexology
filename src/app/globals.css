@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400&family=Nunito+Sans:ital,opsz,wght@0,6..12,300;0,6..12,400;0,6..12,500;0,6..12,600;0,6..12,700;1,6..12,300;1,6..12,400&display=swap');
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply font-body text-brand-950 bg-sand-50;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-display;
+  }
+
+  ::selection {
+    @apply bg-brand-200 text-brand-900;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply inline-flex items-center justify-center px-8 py-3 rounded-full
+           bg-brand-700 text-white font-body font-semibold text-sm
+           tracking-wide uppercase
+           transition-all duration-300 ease-out
+           hover:bg-brand-600 hover:shadow-lg hover:shadow-brand-700/20
+           active:scale-[0.98]
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2;
+  }
+
+  .btn-secondary {
+    @apply inline-flex items-center justify-center px-8 py-3 rounded-full
+           border-2 border-brand-700 text-brand-700 font-body font-semibold text-sm
+           tracking-wide uppercase
+           transition-all duration-300 ease-out
+           hover:bg-brand-700 hover:text-white
+           active:scale-[0.98]
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400 focus-visible:ring-offset-2;
+  }
+
+  .btn-ghost {
+    @apply inline-flex items-center justify-center px-6 py-2 rounded-lg
+           text-brand-700 font-body font-medium text-sm
+           transition-all duration-200
+           hover:bg-brand-50
+           focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-400;
+  }
+
+  .section-container {
+    @apply max-w-6xl mx-auto px-6 sm:px-8 lg:px-12;
+  }
+
+  .card {
+    @apply bg-white rounded-2xl shadow-sm border border-sage-100
+           transition-all duration-300
+           hover:shadow-md hover:border-brand-200;
+  }
+
+  .input-field {
+    @apply w-full px-4 py-3 rounded-xl border border-sage-200
+           font-body text-brand-950 placeholder:text-sage-400
+           bg-white
+           transition-all duration-200
+           focus:outline-none focus:ring-2 focus:ring-brand-300 focus:border-brand-300;
+  }
+
+  .label {
+    @apply block text-sm font-medium text-brand-800 mb-1.5;
+  }
+}
+
+/* Subtle grain texture overlay */
+.grain-overlay::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  opacity: 0.015;
+  z-index: 9999;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-sand-100;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-brand-300 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-400;
+}

@@ -1,0 +1,113 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(ADMIN)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+}
+
+model Service {
+  id           String        @id @default(cuid())
+  name         String
+  description  String
+  durationMin  Int
+  price        Int           // in pence (GBP smallest unit)
+  depositPrice Int?          // optional deposit amount in pence
+  isActive     Boolean       @default(true)
+  sortOrder    Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  appointments Appointment[]
+
+  @@map("services")
+}
+
+model AvailabilityRule {
+  id        String   @id @default(cuid())
+  dayOfWeek Int      // 0 = Sunday, 1 = Monday, ..., 6 = Saturday
+  startTime String   // "09:00" (24h format)
+  endTime   String   // "17:00" (24h format)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("availability_rules")
+}
+
+model AvailabilityException {
+  id        String        @id @default(cuid())
+  date      DateTime      @db.Date
+  type      ExceptionType
+  startTime String?       // if CUSTOM, override start
+  endTime   String?       // if CUSTOM, override end
+  reason    String?
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  @@unique([date, type])
+  @@map("availability_exceptions")
+}
+
+enum ExceptionType {
+  BLOCKED   // fully blocked (holiday etc)
+  CUSTOM    // custom hours for that specific date
+}
+
+model Appointment {
+  id              String            @id @default(cuid())
+  serviceId       String
+  service         Service           @relation(fields: [serviceId], references: [id])
+  clientName      String
+  clientEmail     String
+  clientPhone     String?
+  date            DateTime          @db.Date
+  startTime       String            // "14:00"
+  endTime         String            // "15:00"
+  status          AppointmentStatus @default(PENDING)
+  notes           String?
+  stripeSessionId String?           @unique
+  stripePaymentId String?
+  amountPaid      Int?              // in pence
+  bufferMin       Int               @default(15)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  @@index([date, status])
+  @@index([clientEmail])
+  @@index([stripeSessionId])
+  @@map("appointments")
+}
+
+enum AppointmentStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+  NO_SHOW
+}
+
+model SiteContent {
+  id        String   @id @default(cuid())
+  key       String   @unique
+  value     String   @db.Text
+  updatedAt DateTime @updatedAt
+
+  @@map("site_content")
+}
