@@ -6,6 +6,12 @@ export interface TimeSlot {
   endTime: string;
 }
 
+interface AppointmentSlot {
+  startTime: string;
+  endTime: string;
+  bufferMin: number;
+}
+
 /**
  * Get available slots for a given date and service duration.
  */
@@ -14,21 +20,15 @@ export async function getAvailableSlots(
   durationMin: number,
   bufferMin: number = 15
 ): Promise<TimeSlot[]> {
-  const dayOfWeek = date.getDay(); // 0-6
+  const dayOfWeek = date.getDay();
   const dateOnly = format(date, 'yyyy-MM-dd');
 
-  // 1. Check if this date is blocked
   const exception = await prisma.availabilityException.findFirst({
-    where: {
-      date: new Date(dateOnly),
-    },
+    where: { date: new Date(dateOnly) },
   });
 
-  if (exception?.type === 'BLOCKED') {
-    return [];
-  }
+  if (exception?.type === 'BLOCKED') return [];
 
-  // 2. Get working hours for this date
   let workingHours: { startTime: string; endTime: string }[] = [];
 
   if (exception?.type === 'CUSTOM' && exception.startTime && exception.endTime) {
@@ -37,13 +37,15 @@ export async function getAvailableSlots(
     const rules = await prisma.availabilityRule.findMany({
       where: { dayOfWeek, isActive: true },
     });
-    workingHours = rules.map((r) => ({ startTime: r.startTime, endTime: r.endTime }));
+    workingHours = rules.map((rule: { startTime: string; endTime: string }) => ({
+      startTime: rule.startTime,
+      endTime: rule.endTime,
+    }));
   }
 
   if (workingHours.length === 0) return [];
 
-  // 3. Get existing confirmed/pending appointments for this date
-  const existingAppointments = await prisma.appointment.findMany({
+  const existingAppointments: AppointmentSlot[] = await prisma.appointment.findMany({
     where: {
       date: new Date(dateOnly),
       status: { in: ['PENDING', 'CONFIRMED'] },
@@ -51,9 +53,8 @@ export async function getAvailableSlots(
     select: { startTime: true, endTime: true, bufferMin: true },
   });
 
-  // 4. Generate all possible slots within working hours
   const allSlots: TimeSlot[] = [];
-  const slotInterval = 30; // slots every 30 minutes
+  const slotInterval = 30;
 
   for (const hours of workingHours) {
     const baseDate = new Date(dateOnly);
@@ -73,16 +74,13 @@ export async function getAvailableSlots(
     }
   }
 
-  // 5. Filter out slots that conflict with existing appointments
   const available = allSlots.filter((slot) => {
     const slotStart = timeToMinutes(slot.startTime);
     const slotEnd = timeToMinutes(slot.endTime);
 
-    return !existingAppointments.some((appt) => {
+    return !existingAppointments.some((appt: AppointmentSlot) => {
       const apptStart = timeToMinutes(appt.startTime);
       const apptEnd = timeToMinutes(appt.endTime) + (appt.bufferMin || 0);
-
-      // Check overlap: slot conflicts if it starts before appt+buffer ends AND ends after appt starts
       return slotStart < apptEnd && slotEnd > apptStart - bufferMin;
     });
   });
@@ -90,9 +88,6 @@ export async function getAvailableSlots(
   return available;
 }
 
-/**
- * Check if a specific slot is still available (for double-booking prevention).
- */
 export async function isSlotAvailable(
   date: Date,
   startTime: string,
@@ -104,7 +99,7 @@ export async function isSlotAvailable(
   const slotStart = timeToMinutes(startTime);
   const slotEnd = timeToMinutes(endTime);
 
-  const existingAppointments = await prisma.appointment.findMany({
+  const existingAppointments: AppointmentSlot[] = await prisma.appointment.findMany({
     where: {
       date: new Date(dateOnly),
       status: { in: ['PENDING', 'CONFIRMED'] },
@@ -113,20 +108,17 @@ export async function isSlotAvailable(
     select: { startTime: true, endTime: true, bufferMin: true },
   });
 
-  return !existingAppointments.some((appt) => {
+  return !existingAppointments.some((appt: AppointmentSlot) => {
     const apptStart = timeToMinutes(appt.startTime);
     const apptEnd = timeToMinutes(appt.endTime) + (appt.bufferMin || 0);
     return slotStart < apptEnd && slotEnd > apptStart - bufferMin;
   });
 }
 
-/**
- * Get dates that have any availability in a given month.
- */
 export async function getAvailableDatesInMonth(
   year: number,
-  month: number, // 1-12
-  durationMin: number
+  month: number,
+  _durationMin: number
 ): Promise<string[]> {
   const availableDates: string[] = [];
   const daysInMonth = new Date(year, month, 0).getDate();
@@ -144,19 +136,19 @@ export async function getAvailableDatesInMonth(
     },
   });
 
-  const blockedDates = new Set(
-    exceptions
-      .filter((e) => e.type === 'BLOCKED')
-      .map((e) => format(e.date, 'yyyy-MM-dd'))
-  );
+  const blockedDatesSet = new Set<string>();
+  const customDatesMap = new Map<string, (typeof exceptions)[0]>();
 
-  const customDates = new Map(
-    exceptions
-      .filter((e) => e.type === 'CUSTOM')
-      .map((e) => [format(e.date, 'yyyy-MM-dd'), e])
-  );
+  for (const e of exceptions) {
+    const dateStr = format(e.date, 'yyyy-MM-dd');
+    if (e.type === 'BLOCKED') {
+      blockedDatesSet.add(dateStr);
+    } else if (e.type === 'CUSTOM') {
+      customDatesMap.set(dateStr, e);
+    }
+  }
 
-  const rulesByDay = new Map<number, typeof rules>();
+  const rulesByDay = new Map<number, (typeof rules)>();
   for (const rule of rules) {
     const existing = rulesByDay.get(rule.dayOfWeek) || [];
     existing.push(rule);
@@ -170,14 +162,10 @@ export async function getAvailableDatesInMonth(
     const date = new Date(year, month - 1, day);
     const dateStr = format(date, 'yyyy-MM-dd');
 
-    // Skip past dates
     if (date < today) continue;
+    if (blockedDatesSet.has(dateStr)) continue;
 
-    // Skip blocked dates
-    if (blockedDates.has(dateStr)) continue;
-
-    // Check if this day has availability
-    const custom = customDates.get(dateStr);
+    const custom = customDatesMap.get(dateStr);
     if (custom) {
       availableDates.push(dateStr);
       continue;

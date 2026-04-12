@@ -22,11 +22,15 @@ export function rateLimit(
 }
 
 // Clean up old entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, entry] of rateLimitMap) {
-    if (now > entry.resetTime) {
-      rateLimitMap.delete(key);
+if (typeof setInterval !== 'undefined') {
+  setInterval(() => {
+    const now = Date.now();
+    const keys = Array.from(rateLimitMap.keys());
+    for (const key of keys) {
+      const entry = rateLimitMap.get(key);
+      if (entry && now > entry.resetTime) {
+        rateLimitMap.delete(key);
+      }
     }
-  }
-}, 60 * 1000);
+  }, 60 * 1000);
+}
