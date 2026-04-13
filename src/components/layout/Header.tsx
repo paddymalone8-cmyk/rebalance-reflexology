@@ -54,6 +54,11 @@ export default function Header() {
           >
             Contact
           </a>
+          href="#find-us"
+            className="font-body text-sm text-brand-800 hover:text-brand-600 transition-colors tracking-wide"
+          >
+            Find Us
+          </a>
           <Link href="/booking" className="btn-primary text-xs px-6 py-2.5">
             Book Now
           </Link>
@@ -85,6 +90,7 @@ export default function Header() {
             <a href="#about" onClick={() => setMobileOpen(false)} className="font-body text-brand-800 py-2">About</a>
             <a href="#services" onClick={() => setMobileOpen(false)} className="font-body text-brand-800 py-2">Services</a>
             <a href="#contact" onClick={() => setMobileOpen(false)} className="font-body text-brand-800 py-2">Contact</a>
+            <a href="#find-us" onClick={() => setMobileOpen(false)} className="font-body text-brand-800 py-2">Find Us</a>
             <Link href="/booking" className="btn-primary text-center mt-2" onClick={() => setMobileOpen(false)}>
               Book Now
             </Link>
