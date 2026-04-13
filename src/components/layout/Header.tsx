@@ -54,7 +54,8 @@ export default function Header() {
           >
             Contact
           </a>
-          href="#find-us"
+          <a
+            href="#find-us"
             className="font-body text-sm text-brand-800 hover:text-brand-600 transition-colors tracking-wide"
           >
             Find Us
