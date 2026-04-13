@@ -4,6 +4,7 @@ import Hero from '@/components/ui/Hero';
 import About from '@/components/ui/About';
 import Services from '@/components/ui/Services';
 import Testimonials from '@/components/ui/Testimonials';
+import FindUs from '@/components/ui/FindUs';
 
 export default function HomePage() {
   return (
@@ -14,6 +15,7 @@ export default function HomePage() {
         <About />
         <Services />
         <Testimonials />
+        <FindUs />
       </main>
       <Footer />
     </>
